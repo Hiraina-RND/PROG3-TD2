@@ -3,7 +3,7 @@ import java.util.Objects;
 
 public class Team {
 
-    public enum Continents_enum {
+    public enum ContinentEnum {
         AFRICA,
         EUROPA,
         ASIA,
@@ -34,7 +34,7 @@ public class Team {
 
     private final int id;
     private final String name;
-    private final Continents_enum continent;
+    private final ContinentEnum continent;
     private final List<Player> players;
 
     private Integer getPlayersCount() {
@@ -49,7 +49,7 @@ public class Team {
         return name;
     }
 
-    public Continents_enum getContinent() {
+    public ContinentEnum getContinent() {
         return continent;
     }
 
@@ -57,7 +57,7 @@ public class Team {
         return players;
     }
 
-    public Team(int id, String name, Continents_enum continent, List<Player> players) {
+    public Team(int id, String name, ContinentEnum continent, List<Player> players) {
         this.id = id;
         this.name = name;
         this.continent = continent;
