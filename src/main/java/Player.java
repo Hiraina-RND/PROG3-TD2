@@ -29,18 +29,19 @@ public class Player {
                 ", name='" + name + '\'' +
                 ", age=" + age +
                 ", position=" + position +
-                ", team=Team{id=" + team.getId() +
+                ", team=" + (team != null
+                ? "Team{id=" + team.getId() +
                 ", name='" + team.getName() + '\'' +
-                ", continent=" + team.getContinent() +
-                "}" +
+                ", continent=" + team.getContinent() + "}"
+                : "null") +
                 '}';
     }
 
-    private final int id;
-    private final String name;
-    private final int age;
-    private final PlayerPositionEnum position;
-    private final Team team;
+    private int id;
+    private String name;
+    private int age;
+    private PlayerPositionEnum position;
+    private Team team;
 
     private String getTeamName() {
         return this.team.getName();
@@ -66,6 +67,25 @@ public class Player {
         return team;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public void setPosition(PlayerPositionEnum position) {
+        this.position = position;
+    }
+
+    public void setTeam(Team team) {
+        this.team = team;
+    }
 
     public Player(int id, String name, int age, PlayerPositionEnum position, Team team) {
         this.id = id;
@@ -73,5 +93,18 @@ public class Player {
         this.age = age;
         this.position = position;
         this.team = team;
+    }
+
+    public Player(String name, int age, PlayerPositionEnum position, Team team) {
+        this.name = name;
+        this.age = age;
+        this.position = position;
+        this.team = team;
+    }
+
+    public Player(String name, int age, PlayerPositionEnum position) {
+        this.name = name;
+        this.age = age;
+        this.position = position;
     }
 }
