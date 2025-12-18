@@ -65,7 +65,7 @@ public class DataRetriever {
 
         try(
                 Connection connection = dbConnection.getDBConnection();
-                PreparedStatement ps = connection.prepareStatement(String.valueOf(SQL))
+                PreparedStatement ps = connection.prepareStatement(SQL)
         ) {
             ps.setInt(1, idTeam);
 
@@ -93,7 +93,7 @@ public class DataRetriever {
 
         try (
                 Connection connection = dbConnection.getDBConnection();
-                PreparedStatement ps = connection.prepareStatement(String.valueOf(SQL))
+                PreparedStatement ps = connection.prepareStatement(SQL)
         ){
             ps.setInt(1, id);
 
@@ -108,5 +108,36 @@ public class DataRetriever {
             throw new RuntimeException("Error executing query", e);
         }
         return team;
+    }
+
+    List<Player> findPlayers(int page, int size) {
+        DBConnection dbConnection = new DBConnection();
+        String SQL = """
+                SELECT id, name, age, position, id_team
+                FROM "Player"
+                LIMIT ? OFFSET ?
+                """;
+        List<Player> players = new ArrayList<>();
+
+        try (
+                Connection connection = dbConnection.getDBConnection();
+                PreparedStatement ps = connection.prepareStatement(SQL);
+        ){
+            ps.setInt(1, size);
+            ps.setInt(2, (page - 1) * size);
+
+            try (
+                    ResultSet resultSet = ps.executeQuery();
+            ){
+                while (resultSet.next()){
+                    players.add(mapToPlayer(resultSet));
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException("Error executing query");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error executing query", e);
+        }
+        return players;
     }
 }
