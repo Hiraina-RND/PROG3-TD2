@@ -29,7 +29,10 @@ public class Player {
                 ", name='" + name + '\'' +
                 ", age=" + age +
                 ", position=" + position +
-                ", team=" + team +
+                ", team=Team{id=" + team.getId() +
+                ", name='" + team.getName() + '\'' +
+                ", continent=" + team.getContinent() +
+                "}" +
                 '}';
     }
 
