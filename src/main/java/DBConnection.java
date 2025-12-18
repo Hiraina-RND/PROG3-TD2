@@ -12,10 +12,8 @@ public class DBConnection {
     private final String USER = dotenv.get("DB_USER");
 
     public Connection getDBConnection() {
-        try (
-                Connection connection = DriverManager.getConnection(this.URL, this.USER, this.PASSWORD);
-        ) {
-            return connection;
+        try {
+            return DriverManager.getConnection(this.URL, this.USER, this.PASSWORD);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
