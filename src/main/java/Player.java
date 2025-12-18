@@ -95,6 +95,13 @@ public class Player {
         this.team = team;
     }
 
+    public Player(int id, String name, int age, PlayerPositionEnum position) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+        this.position = position;
+    }
+
     public Player(String name, int age, PlayerPositionEnum position, Team team) {
         this.name = name;
         this.age = age;

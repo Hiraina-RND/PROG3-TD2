@@ -173,9 +173,9 @@ public class DataRetriever {
                     Player foundExisting = null;
 
                     for (Player existing : existingPlayers) {
-                        if (plr.getName().equals(existing.getName())
+                        if (plr.getId() == existing.getId() || (plr.getName().equals(existing.getName())
                                 && plr.getAge() == existing.getAge()
-                                && plr.getPosition() == existing.getPosition()) {
+                                && plr.getPosition() == existing.getPosition())) {
                             foundExisting = existing;
                             break;
                         }
