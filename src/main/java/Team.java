@@ -32,10 +32,10 @@ public class Team {
                 '}';
     }
 
-    private final int id;
-    private final String name;
-    private final ContinentEnum continent;
-    private final List<Player> players;
+    private int id;
+    private String name;
+    private ContinentEnum continent;
+    private List<Player> players;
 
     private Integer getPlayersCount() {
         return players.size();
@@ -62,5 +62,17 @@ public class Team {
         this.name = name;
         this.continent = continent;
         this.players = players;
+    }
+
+    public Team(int id, String name, ContinentEnum continent) {
+        this.id = id;
+        this.name = name;
+        this.continent = continent;
+    }
+
+    public Team(String name, ContinentEnum continent) {
+        this.id = id;
+        this.name = name;
+        this.continent = continent;
     }
 }
