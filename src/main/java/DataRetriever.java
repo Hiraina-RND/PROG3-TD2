@@ -220,4 +220,99 @@ public class DataRetriever {
 
         return playersToAdd;
     }
+
+    public List<Team> findAllExistingTeamsWithoutPlayers() {
+        DBConnection dbConnection = new DBConnection();
+        List<Team> allTeam = new ArrayList<>();
+        String SQL = """
+                SELECT id, name, continent
+                FROM "Team"
+                """;
+
+        try (
+                Connection connection = dbConnection.getDBConnection();
+                PreparedStatement ps = connection.prepareStatement(SQL);
+                ResultSet resultSet = ps.executeQuery()
+        ) {
+            while (resultSet.next()) {
+                allTeam.add(new Team(
+                        resultSet.getInt("id"),
+                        resultSet.getString("name"),
+                        Team.ContinentEnum.valueOf(resultSet.getString("continent"))
+                ));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error executing query", e);
+        }
+        return allTeam;
+    }
+
+    public Team saveTeam(Team teamToSave) {
+        DBConnection dbConnection = new DBConnection();
+        Team addedTeam = null;
+        String SQLIfTeamNotAlreadyExisting = """
+                INSERT INTO "Team" (name, continent)
+                VALUES (?, ?::continents_enum)
+                RETURNING id, name, continent
+                """;
+        String SQLToUpdateTeam = """
+                UPDATE "Team"
+                SET name = ?,
+                    continent = ?::continents_enum
+                WHERE id = ?
+                """;
+        List<Team> existingTeams = findAllExistingTeamsWithoutPlayers();
+        Team existingTeam = null;
+
+        try (
+                Connection connection = dbConnection.getDBConnection()
+        ) {
+            for (Team team : existingTeams){
+                if (
+                        team.getId() == teamToSave.getId() ||
+                                (team.getName().equals(teamToSave.getName()) &&
+                                        team.getContinent().equals(teamToSave.getContinent()))
+                ) {
+                    existingTeam = team;
+                    break;
+                }
+            }
+
+            if (existingTeam != null){
+                try (
+                        PreparedStatement psToUpdate = connection.prepareStatement(SQLToUpdateTeam)
+                ) {
+                    psToUpdate.setString(1, teamToSave.getName());
+                    psToUpdate.setString(2, teamToSave.getContinent().name());
+                    psToUpdate.setInt(3, teamToSave.getId());
+
+
+                    psToUpdate.executeUpdate();
+                    return findTeamById(teamToSave.getId());
+                } catch (SQLException e) {
+                    throw new RuntimeException("Error executing query", e);
+                }
+            } else {
+                try (
+                        PreparedStatement ps = connection.prepareStatement(SQLIfTeamNotAlreadyExisting)
+                ){
+                    ps.setString(1, teamToSave.getName());
+                    ps.setString(2, teamToSave.getContinent().name());
+
+                    try (ResultSet resultSet = ps.executeQuery()) {
+                        while (resultSet.next()) {
+                            addedTeam =  new Team(
+                                    resultSet.getInt("id"),
+                                    resultSet.getString("name"),
+                                    Team.ContinentEnum.valueOf(resultSet.getString("continent"))
+                            );
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error executing query", e);
+        }
+        return addedTeam;
+    }
 }
