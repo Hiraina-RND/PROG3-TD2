@@ -390,4 +390,39 @@ public class DataRetriever {
         }
         return addedTeam;
     }
+    public List<Team> findTeamsByPlayerName(String playerName){
+        DBConnection dbConnection = new DBConnection();
+        List<Integer> allTeamId = new ArrayList<>();
+        List<Team> foundedTeams = new ArrayList<>();
+
+        String SQLToFindAllIdTeamByPlayerName = """
+                SELECT id_team
+                FROM "Player"
+                WHERE name ILIKE ?
+                """;
+
+        try (
+                Connection connection = dbConnection.getDBConnection();
+                PreparedStatement psToFindAllIdTeamByPlayerName = connection.prepareStatement(SQLToFindAllIdTeamByPlayerName)
+        ){
+            psToFindAllIdTeamByPlayerName.setString(1, "%" + playerName + "%");
+
+            try (ResultSet resultSet = psToFindAllIdTeamByPlayerName.executeQuery()){
+                while(resultSet.next()){
+                    allTeamId.add(resultSet.getInt("id_team"));
+                }
+            }
+            allTeamId = allTeamId
+                    .stream()
+                    .distinct()
+                    .toList();
+
+            for (Integer i : allTeamId){
+                foundedTeams.add(findTeamById(i));
+            }
+            return foundedTeams;
+        } catch (SQLException e){
+            throw new RuntimeException("Database error", e);
+        }
+    }
 }
