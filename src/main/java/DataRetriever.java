@@ -247,71 +247,142 @@ public class DataRetriever {
         return allTeam;
     }
 
-    public Team saveTeam(Team teamToSave) {
+    public Player findPlayerById(int idPlayer) {
+        DBConnection dbConnection = new DBConnection();
+        Player foundPlayer = null;
+
+        String SQL = """
+            SELECT id, name, age, "position", id_team
+            FROM "Player"
+            WHERE id = ?
+            """;
+
+        try (Connection connection = dbConnection.getDBConnection();
+             PreparedStatement ps = connection.prepareStatement(SQL)) {
+
+            ps.setInt(1, idPlayer);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    foundPlayer = new Player(
+                            rs.getInt("id"),
+                            rs.getString("name"),
+                            rs.getInt("age"),
+                            Player.PlayerPositionEnum.valueOf(rs.getString("position")),
+                            findTeamById(rs.getInt("id_team"))
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching player by id", e);
+        }
+
+        return foundPlayer;
+    }
+
+    public Team saveTeam(Team teamToSave) throws SQLException {
         DBConnection dbConnection = new DBConnection();
         Team addedTeam = null;
-        String SQLIfTeamNotAlreadyExisting = """
-                INSERT INTO "Team" (name, continent)
-                VALUES (?, ?::continents_enum)
-                RETURNING id, name, continent
-                """;
+
+        String SQLToInsertTeam = """
+            INSERT INTO "Team" (name, continent)
+            VALUES (?, ?::continents_enum)
+            RETURNING id
+            """;
+
+        String SQLToInsertPlayer = """
+            INSERT INTO "Player" (name, age, "position", id_team)
+            VALUES (?, ?, ?::positions_enum, ?)
+            """;
+
+        String SQLToDeleteAllPlayersOfTheTeam = """
+            DELETE FROM "Player"
+            WHERE id_team = ?
+            """;
+
         String SQLToUpdateTeam = """
-                UPDATE "Team"
-                SET name = ?,
-                    continent = ?::continents_enum
-                WHERE id = ?
-                """;
+            UPDATE "Team"
+            SET name = ?, continent = ?::continents_enum
+            WHERE id = ?
+            """;
+
         List<Team> existingTeams = findAllExistingTeamsWithoutPlayers();
         Team existingTeam = null;
 
-        try (
-                Connection connection = dbConnection.getDBConnection()
-        ) {
-            for (Team team : existingTeams){
-                if (
-                        team.getId() == teamToSave.getId() ||
-                                (team.getName().equals(teamToSave.getName()) &&
-                                        team.getContinent().equals(teamToSave.getContinent()))
-                ) {
-                    existingTeam = team;
-                    break;
-                }
+        for (Team team : existingTeams) {
+            if ((teamToSave.getId() != 0 && team.getId() == teamToSave.getId())
+                    || (team.getName().equals(teamToSave.getName())
+                    && team.getContinent().equals(teamToSave.getContinent()))) {
+                existingTeam = team;
+                break;
             }
+        }
 
-            if (existingTeam != null){
-                try (
-                        PreparedStatement psToUpdate = connection.prepareStatement(SQLToUpdateTeam)
-                ) {
-                    psToUpdate.setString(1, teamToSave.getName());
-                    psToUpdate.setString(2, teamToSave.getContinent().name());
-                    psToUpdate.setInt(3, teamToSave.getId());
+        try (Connection connection = dbConnection.getDBConnection()) {
+            connection.setAutoCommit(false);
 
+            try {
+                if (existingTeam != null) {
+                    teamToSave.setId(existingTeam.getId());
 
-                    psToUpdate.executeUpdate();
-                    return findTeamById(teamToSave.getId());
-                } catch (SQLException e) {
-                    throw new RuntimeException("Error executing query", e);
-                }
-            } else {
-                try (
-                        PreparedStatement ps = connection.prepareStatement(SQLIfTeamNotAlreadyExisting)
-                ){
-                    ps.setString(1, teamToSave.getName());
-                    ps.setString(2, teamToSave.getContinent().name());
+                    try (PreparedStatement psUpdate = connection.prepareStatement(SQLToUpdateTeam)) {
+                        psUpdate.setString(1, teamToSave.getName());
+                        psUpdate.setString(2, teamToSave.getContinent().name());
+                        psUpdate.setInt(3, teamToSave.getId());
+                        psUpdate.executeUpdate();
+                    }
 
-                    try (ResultSet resultSet = ps.executeQuery()) {
-                        while (resultSet.next()) {
-                            addedTeam =  new Team(
-                                    resultSet.getInt("id"),
-                                    resultSet.getString("name"),
-                                    Team.ContinentEnum.valueOf(resultSet.getString("continent"))
-                            );
+                    if (teamToSave.getPlayers() != null) {
+                        if (teamToSave.getPlayers().isEmpty()) {
+                            try (PreparedStatement psDelete = connection.prepareStatement(SQLToDeleteAllPlayersOfTheTeam)) {
+                                psDelete.setInt(1, teamToSave.getId());
+                                psDelete.executeUpdate();
+                            }
+                        } else {
+                            for (Player player : teamToSave.getPlayers()) {
+                                if (player.getId() == 0 || findPlayerById(player.getId()) == null) {
+                                    try (PreparedStatement psInsert = connection.prepareStatement(SQLToInsertPlayer)) {
+                                        psInsert.setString(1, player.getName());
+                                        psInsert.setInt(2, player.getAge());
+                                        psInsert.setString(3, player.getPosition().name());
+                                        psInsert.setInt(4, teamToSave.getId());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                } else {
+                    try (PreparedStatement psInsertTeam = connection.prepareStatement(SQLToInsertTeam)) {
+                        psInsertTeam.setString(1, teamToSave.getName());
+                        psInsertTeam.setString(2, teamToSave.getContinent().name());
+
+                        try (ResultSet rs = psInsertTeam.executeQuery()) {
+                            rs.next();
+                            teamToSave.setId(rs.getInt("id"));
+                        }
+                    }
+
+                    if (teamToSave.getPlayers() != null) {
+                        for (Player player : teamToSave.getPlayers()) {
+                            try (PreparedStatement psInsert = connection.prepareStatement(SQLToInsertPlayer)) {
+                                psInsert.setString(1, player.getName());
+                                psInsert.setInt(2, player.getAge());
+                                psInsert.setString(3, player.getPosition().name());
+                                psInsert.setInt(4, teamToSave.getId());
+                            }
                         }
                     }
                 }
+
+                connection.commit();
+                addedTeam = findTeamById(teamToSave.getId());
+
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error executing query", e);
         }
         return addedTeam;
     }
