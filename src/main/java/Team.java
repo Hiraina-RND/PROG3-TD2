@@ -57,7 +57,30 @@ public class Team {
         return players;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setContinent(ContinentEnum continent) {
+        this.continent = continent;
+    }
+
+    public void setPlayers(List<Player> players) {
+        this.players = players;
+    }
+
     public Team(int id, String name, ContinentEnum continent, List<Player> players) {
+        this.id = id;
+        this.name = name;
+        this.continent = continent;
+        this.players = players;
+    }
+
+    public Team(String name, ContinentEnum continent, List<Player> players) {
         this.id = id;
         this.name = name;
         this.continent = continent;
