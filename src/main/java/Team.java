@@ -28,7 +28,14 @@ public class Team {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", continent=" + continent +
-                ", players=" + players +
+                ", players=" + players.stream()
+                .map(p -> "Player{" +
+                        "id=" + p.getId() +
+                        ", name='" + p.getName() + '\'' +
+                        ", age=" + p.getAge() +
+                        ", position='" + p.getPosition() + '\'' +
+                        '}')
+                .toList() +
                 '}';
     }
 
