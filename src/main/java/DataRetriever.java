@@ -347,6 +347,8 @@ public class DataRetriever {
                                         psInsert.setInt(2, player.getAge());
                                         psInsert.setString(3, player.getPosition().name());
                                         psInsert.setInt(4, teamToSave.getId());
+
+                                        psInsert.executeUpdate();
                                     }
                                 }
                             }
@@ -371,6 +373,8 @@ public class DataRetriever {
                                 psInsert.setInt(2, player.getAge());
                                 psInsert.setString(3, player.getPosition().name());
                                 psInsert.setInt(4, teamToSave.getId());
+
+                                psInsert.executeUpdate();
                             }
                         }
                     }
