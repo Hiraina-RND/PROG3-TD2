@@ -26,3 +26,23 @@ SELECT setval(
     pg_get_serial_sequence('"Player"', 'id'),
     (SELECT MAX(id) FROM "Player")
 );
+
+UPDATE "Player"
+SET goal_nb = 0
+WHERE id = 1;
+
+UPDATE "Player"
+SET goal_nb = 2
+WHERE id = 2;
+
+UPDATE "Player"
+SET goal_nb = 5
+WHERE id = 3;
+
+UPDATE "Player"
+SET goal_nb = null
+WHERE id = 4;
+
+UPDATE "Player"
+SET goal_nb = null
+WHERE id = 5;

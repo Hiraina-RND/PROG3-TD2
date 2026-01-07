@@ -29,6 +29,7 @@ public class Player {
                 ", name='" + name + '\'' +
                 ", age=" + age +
                 ", position=" + position +
+                ", goal_nb=" + goal_nb +
                 ", team=" + (team != null
                 ? "Team{id=" + team.getId() +
                 ", name='" + team.getName() + '\'' +
@@ -41,8 +42,8 @@ public class Player {
     private String name;
     private int age;
     private PlayerPositionEnum position;
+    private Integer goal_nb;
     private Team team;
-    private int goal_nb;
 
     private String getTeamName() {
         return this.team.getName();
@@ -68,6 +69,10 @@ public class Player {
         return team;
     }
 
+    public Integer getGoal_nb() {
+        return goal_nb;
+    }
+
     public void setId(int id) {
         this.id = id;
     }
@@ -88,7 +93,21 @@ public class Player {
         this.team = team;
     }
 
-    public Player(int id, String name, int age, PlayerPositionEnum position, Team team, int goal_nb) {
+    public void setGoal_nb(Integer goal_nb) {
+        this.goal_nb = goal_nb;
+    }
+
+
+    public Player(int id, String name, int age, PlayerPositionEnum position, int goal_nb, Team team) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+        this.position = position;
+        this.goal_nb = goal_nb;
+        this.team = team;
+    }
+
+    public Player(int id, String name, int age, PlayerPositionEnum position, Team team) {
         this.id = id;
         this.name = name;
         this.age = age;

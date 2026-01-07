@@ -34,6 +34,7 @@ public class Team {
                         ", name='" + p.getName() + '\'' +
                         ", age=" + p.getAge() +
                         ", position='" + p.getPosition() + '\'' +
+                        ", goal_nb=" + p.getGoal_nb() +
                         '}')
                 .toList() +
                 '}';
@@ -104,5 +105,22 @@ public class Team {
         this.id = id;
         this.name = name;
         this.continent = continent;
+    }
+
+    public Integer getPlayersGoals() {
+        if (players == null || players.isEmpty()) {
+            return 0;
+        }
+
+        Integer totalGoals = 0;
+        for (Player p : players) {
+            if (p.getGoal_nb() == null) {
+                throw new IllegalStateException(
+                        "Le nombre de buts du joueur " + p.getName() + " est encore inconnu. Impossible de calculer le total."
+                );
+            }
+            totalGoals += p.getGoal_nb();
+        }
+        return totalGoals;
     }
 }

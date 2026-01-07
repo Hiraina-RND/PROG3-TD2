@@ -18,6 +18,7 @@ public class DataRetriever {
                 resultSet.getString("name"),
                 resultSet.getInt("age"),
                 Player.PlayerPositionEnum.valueOf(resultSet.getString("position")),
+                resultSet.getInt("goal_nb"),
                 findTeamByIdWithoutPlayers(resultSet.getInt("id_team"))
         );
     }
@@ -61,7 +62,7 @@ public class DataRetriever {
         Connection connection = dbConnection.getDBConnection();
 
         String SQL = """
-                SELECT id, name, age, "position", id_team
+                SELECT id, name, age, "position", id_team, goal_nb
                 FROM "Player"
                 WHERE id_team = ?
                 """;
@@ -120,7 +121,7 @@ public class DataRetriever {
         DBConnection dbConnection = new DBConnection();
         Connection connection = dbConnection.getDBConnection();
         String SQL = """
-                SELECT id, name, age, position, id_team
+                SELECT id, name, age, position, id_team, goal_nb
                 FROM "Player"
                 LIMIT ? OFFSET ?
                 """;
@@ -156,19 +157,19 @@ public class DataRetriever {
         List<Player> playersToAdd = new ArrayList<>();
 
         String SQLToSelectExistingPlayers = """
-        SELECT id, name, age, "position", id_team
+        SELECT id, name, age, "position", id_team, goal_nb
         FROM "Player"
         """;
 
         String SQLToInsertPlayer = """
-        INSERT INTO "Player" (name, age, "position", id_team)
-        VALUES (?, ?, ?::positions_enum, ?)
+        INSERT INTO "Player" (name, age, "position", id_team, goal_nb)
+        VALUES (?, ?, ?::positions_enum, ?, ?)
         RETURNING id
         """;
 
         String SQLToInsertPlayerWithId = """
-        INSERT INTO "Player" (id, name, age, "position", id_team)
-        VALUES (?, ?, ?, ?::positions_enum, ?)
+        INSERT INTO "Player" (id, name, age, "position", id_team, goal_nb)
+        VALUES (?, ?, ?, ?::positions_enum, ?, ?)
         """;
 
         String SQLToSetSequenceOfPlayerIdOnPlayer = """
@@ -223,6 +224,7 @@ public class DataRetriever {
                         } else {
                             psToInsertNewPlayers.setNull(5, Types.INTEGER);
                         }
+                        psToInsertNewPlayers.setInt(6, player.getGoal_nb());
 
                         psToInsertNewPlayers.executeUpdate();
                         psToSetVal.execute();
@@ -238,6 +240,7 @@ public class DataRetriever {
                         } else {
                             psToInsertNewPlayers.setNull(4, Types.INTEGER);
                         }
+                        psToInsertNewPlayers.setInt(5, player.getGoal_nb());
 
                         try (ResultSet rs = psToInsertNewPlayers.executeQuery()) {
                             if (rs.next()) {
@@ -295,7 +298,7 @@ public class DataRetriever {
         Player foundPlayer = null;
 
         String SQL = """
-            SELECT id, name, age, "position", id_team
+            SELECT id, name, age, "position", id_team, goal_nb
             FROM "Player"
             WHERE id = ?
             """;
@@ -308,13 +311,7 @@ public class DataRetriever {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    foundPlayer = new Player(
-                            rs.getInt("id"),
-                            rs.getString("name"),
-                            rs.getInt("age"),
-                            Player.PlayerPositionEnum.valueOf(rs.getString("position")),
-                            findTeamById(rs.getInt("id_team"))
-                    );
+                    foundPlayer = mapToPlayer(rs);
                 }
             }
 
@@ -332,7 +329,7 @@ public class DataRetriever {
         Connection connection = dbConnection.getDBConnection();
         List<Player> players = new ArrayList<>();
         String SQL = """
-                SELECT id, name, age, "position", id_team
+                SELECT id, name, age, "position", id_team, goal_nb
                 FROM "Player"
                 """;
 
@@ -541,7 +538,7 @@ public class DataRetriever {
         List<Player> players = new ArrayList<>();
 
         StringBuilder sql = new StringBuilder("""
-        SELECT p.id, p.name, p.age, p."position", p.id_team
+        SELECT p.id, p.name, p.age, p."position", p.id_team, p.goal_nb
         FROM "Player" p
         LEFT JOIN "Team" t ON p.id_team = t.id
         WHERE 1=1
