@@ -166,6 +166,18 @@ public class DataRetriever {
         RETURNING id
         """;
 
+        String SQLToInsertPlayerWithId = """
+        INSERT INTO "Player" (id, name, age, "position", id_team)
+        VALUES (?, ?, ?, ?::positions_enum, ?)
+        """;
+
+        String SQLToSetSequenceOfPlayerIdOnPlayer = """
+                SELECT setval(
+                    pg_get_serial_sequence('"Player"', 'id'),
+                    (SELECT MAX(id) FROM "Player")
+                );
+                """;
+
         try {
             connection.setAutoCommit(false);
 
@@ -197,23 +209,43 @@ public class DataRetriever {
                 }
             }
 
-            try (PreparedStatement psToInsertNewPlayers = connection.prepareStatement(SQLToInsertPlayer)) {
+            for (Player player : playersToAdd) {
+                if (player.getId() != 0) {
+                    try (
+                            PreparedStatement psToInsertNewPlayers = connection.prepareStatement(SQLToInsertPlayerWithId);
+                            PreparedStatement psToSetVal = connection.prepareStatement(SQLToSetSequenceOfPlayerIdOnPlayer)
+                    ){
+                        psToInsertNewPlayers.setInt(1, player.getId());
+                        psToInsertNewPlayers.setString(2, player.getName());
+                        psToInsertNewPlayers.setInt(3, player.getAge());
+                        psToInsertNewPlayers.setString(4, player.getPosition().name());
 
-                for (Player player : playersToAdd) {
-                    psToInsertNewPlayers.setString(1, player.getName());
-                    psToInsertNewPlayers.setInt(2, player.getAge());
-                    psToInsertNewPlayers.setString(3, player.getPosition().name());
+                        if (player.getTeam() != null) {
+                            psToInsertNewPlayers.setInt(5, player.getTeam().getId());
+                        } else {
+                            psToInsertNewPlayers.setNull(5, Types.INTEGER);
+                        }
 
-                    if (player.getTeam() != null) {
-                        psToInsertNewPlayers.setInt(4, player.getTeam().getId());
-                    } else {
-                        psToInsertNewPlayers.setNull(4, Types.INTEGER);
+                        psToInsertNewPlayers.executeUpdate();
+                        psToSetVal.execute();
                     }
+                } else {
+                    try (PreparedStatement psToInsertNewPlayers = connection.prepareStatement(SQLToInsertPlayer)){
+                        psToInsertNewPlayers.setString(1, player.getName());
+                        psToInsertNewPlayers.setInt(2, player.getAge());
+                        psToInsertNewPlayers.setString(3, player.getPosition().name());
 
-                    try (ResultSet rs = psToInsertNewPlayers.executeQuery()) {
-                        if (rs.next()) {
-                            int generatedId = rs.getInt("id");
-                            player.setId(generatedId);
+                        if (player.getTeam() != null) {
+                            psToInsertNewPlayers.setInt(4, player.getTeam().getId());
+                        } else {
+                            psToInsertNewPlayers.setNull(4, Types.INTEGER);
+                        }
+
+                        try (ResultSet rs = psToInsertNewPlayers.executeQuery()) {
+                            if (rs.next()) {
+                                int generatedId = rs.getInt("id");
+                                player.setId(generatedId);
+                            }
                         }
                     }
                 }
