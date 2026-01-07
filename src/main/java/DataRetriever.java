@@ -193,9 +193,7 @@ public class DataRetriever {
                     Player foundExisting = null;
 
                     for (Player existing : existingPlayers) {
-                        if (plr.getId() == existing.getId() || (plr.getName().equals(existing.getName())
-                                && plr.getAge() == existing.getAge()
-                                && plr.getPosition() == existing.getPosition())) {
+                        if (plr.getId() == existing.getId() || (plr.getName().equals(existing.getName()))) {
                             foundExisting = existing;
                             break;
                         }
