@@ -335,6 +335,11 @@ public class DataRetriever {
             RETURNING id
             """;
 
+        String SQLToInsertTeamWithId = """
+            INSERT INTO "Team" (id, name, continent)
+            VALUES (?, ?, ?::continents_enum)
+            """;
+
         String SQLToInsertPlayer = """
             INSERT INTO "Player" (name, age, "position", id_team)
             VALUES (?, ?, ?::positions_enum, ?)
@@ -411,6 +416,15 @@ public class DataRetriever {
                     }
                 }
             } else {
+                if (teamToSave.getId() != 0){
+                    try (PreparedStatement psInsertTeam = connection.prepareStatement(SQLToInsertTeamWithId)) {
+                        psInsertTeam.setInt(1, teamToSave.getId());
+                        psInsertTeam.setString(2, teamToSave.getName());
+                        psInsertTeam.setString(3, teamToSave.getContinent().name());
+
+                        psInsertTeam.executeUpdate();
+                    }
+                } else {
                     try (PreparedStatement psInsertTeam = connection.prepareStatement(SQLToInsertTeam)) {
                         psInsertTeam.setString(1, teamToSave.getName());
                         psInsertTeam.setString(2, teamToSave.getContinent().name());
@@ -420,7 +434,7 @@ public class DataRetriever {
                             teamToSave.setId(rs.getInt("id"));
                         }
                     }
-
+                }
                     if (teamToSave.getPlayers() != null) {
                         for (Player player : teamToSave.getPlayers()) {
                             try (PreparedStatement psInsert = connection.prepareStatement(SQLToInsertPlayer)) {
