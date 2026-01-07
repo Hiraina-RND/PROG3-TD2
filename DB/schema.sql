@@ -17,3 +17,8 @@ CREATE TABLE "Player" (
     id_team INT,
     CONSTRAINT fk_team FOREIGN KEY (id_team) REFERENCES "Team"(id) ON DELETE CASCADE
 );
+
+
+-- add the new column for Player table
+ALTER TABLE "Player"
+ADD COLUMN goal_nb INT;

@@ -42,6 +42,7 @@ public class Player {
     private int age;
     private PlayerPositionEnum position;
     private Team team;
+    private int goal_nb;
 
     private String getTeamName() {
         return this.team.getName();
@@ -87,12 +88,13 @@ public class Player {
         this.team = team;
     }
 
-    public Player(int id, String name, int age, PlayerPositionEnum position, Team team) {
+    public Player(int id, String name, int age, PlayerPositionEnum position, Team team, int goal_nb) {
         this.id = id;
         this.name = name;
         this.age = age;
         this.position = position;
         this.team = team;
+        this.goal_nb = goal_nb;
     }
 
     public Player(int id, String name, int age, PlayerPositionEnum position) {
