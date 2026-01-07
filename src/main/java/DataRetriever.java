@@ -529,4 +529,70 @@ public class DataRetriever {
             dbConnection.close(connection);
         }
     }
+
+    public List<Player> findPlayersByCriteria(
+            String playerName,
+            Player.PlayerPositionEnum position,
+            String teamName,
+            Team.ContinentEnum continent,
+            int page,
+            int size
+    ) {
+        DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
+        List<Player> players = new ArrayList<>();
+
+        StringBuilder sql = new StringBuilder("""
+        SELECT p.id, p.name, p.age, p."position", p.id_team
+        FROM "Player" p
+        LEFT JOIN "Team" t ON p.id_team = t.id
+        WHERE 1=1
+        """);
+
+        List<Object> parameters = new ArrayList<>();
+
+        if (playerName != null && !playerName.isBlank()) {
+            sql.append(" AND p.name ILIKE ?");
+            parameters.add("%" + playerName + "%");
+        }
+
+        if (continent != null) {
+            sql.append(" AND (t.continent = ?::continents_enum)");
+            parameters.add(continent.name());
+        }
+
+        if (teamName != null && !teamName.isBlank()) {
+            sql.append(" AND t.name ILIKE ?");
+            parameters.add("%" + teamName + "%");
+        }
+
+        if (continent != null) {
+            sql.append(" AND t.continent = ?::continents_enum");
+            parameters.add(continent.name());
+        }
+
+        sql.append(" LIMIT ? OFFSET ?");
+        parameters.add(size);
+        parameters.add((page - 1) * size);
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < parameters.size(); i++) {
+                ps.setObject(i + 1, parameters.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    players.add(mapToPlayer(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error executing filtered player search", e);
+        } finally {
+            dbConnection.close(connection);
+        }
+
+        return players;
+    }
 }
