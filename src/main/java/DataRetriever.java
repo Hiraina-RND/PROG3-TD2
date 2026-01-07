@@ -483,17 +483,4 @@ public class DataRetriever {
             dbConnection.close(connection);
         }
     }
-
-    static void main(String[] args) throws SQLException {
-        DataRetriever dataRetriever = new DataRetriever();
-        List<Player> players = new ArrayList<>();
-        Player rakoto = new Player("rakoto", 25, Player.PlayerPositionEnum.valueOf("GK"), null);
-        Player rabe = new Player("rabe", 28, Player.PlayerPositionEnum.valueOf("GK"), null);
-        players.add(rakoto);
-        players.add(rabe);
-
-        Team team = new Team( 1,"FC Tsenakely", Team.ContinentEnum.valueOf("AFRICA"), players);
-        System.out.println(dataRetriever.saveTeam(team));
-
-    }
 }
