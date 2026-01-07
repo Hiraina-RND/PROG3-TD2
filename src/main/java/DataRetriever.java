@@ -24,6 +24,7 @@ public class DataRetriever {
 
     private Team findTeamByIdWithoutPlayers(Integer id) {
         DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
 
         String SQL = """
             SELECT id, name, continent
@@ -32,7 +33,6 @@ public class DataRetriever {
             """;
 
         try (
-                Connection connection = dbConnection.getDBConnection();
                 PreparedStatement ps = connection.prepareStatement(SQL)
         ) {
             ps.setInt(1, id);
@@ -49,6 +49,8 @@ public class DataRetriever {
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            dbConnection.close(connection);
         }
         return null;
     }
@@ -56,6 +58,7 @@ public class DataRetriever {
     private List<Player> findAllPlayerByIdTeam(Integer idTeam) {
         DBConnection dbConnection = new DBConnection();
         List<Player> players = new ArrayList<>();
+        Connection connection = dbConnection.getDBConnection();
 
         String SQL = """
                 SELECT id, name, age, "position", id_team
@@ -64,7 +67,6 @@ public class DataRetriever {
                 """;
 
         try(
-                Connection connection = dbConnection.getDBConnection();
                 PreparedStatement ps = connection.prepareStatement(SQL)
         ) {
             ps.setInt(1, idTeam);
@@ -78,12 +80,15 @@ public class DataRetriever {
             }
         } catch (SQLException e){
             throw new RuntimeException("Error executing query", e);
+        } finally {
+            dbConnection.close(connection);
         }
         return players;
     }
 
     public Team findTeamById(Integer id) {
         DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
         String SQL = """
                 SELECT id, name, continent
                 FROM "Team"
@@ -92,7 +97,6 @@ public class DataRetriever {
         Team team = null;
 
         try (
-                Connection connection = dbConnection.getDBConnection();
                 PreparedStatement ps = connection.prepareStatement(SQL)
         ){
             ps.setInt(1, id);
@@ -106,12 +110,15 @@ public class DataRetriever {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error executing query", e);
+        } finally {
+            dbConnection.close(connection);
         }
         return team;
     }
 
     List<Player> findPlayers(int page, int size) {
         DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
         String SQL = """
                 SELECT id, name, age, position, id_team
                 FROM "Player"
@@ -120,7 +127,6 @@ public class DataRetriever {
         List<Player> players = new ArrayList<>();
 
         try (
-                Connection connection = dbConnection.getDBConnection();
                 PreparedStatement ps = connection.prepareStatement(SQL);
         ){
             ps.setInt(1, size);
@@ -137,6 +143,8 @@ public class DataRetriever {
             }
         } catch (Exception e) {
             throw new RuntimeException("Error executing query", e);
+        } finally {
+            dbConnection.close(connection);
         }
         return players;
     }
@@ -216,6 +224,8 @@ public class DataRetriever {
         } catch (SQLException e) {
             connection.rollback();
             throw new RuntimeException("Error: ", e);
+        } finally {
+            dbConnection.close(connection);
         }
 
         return playersToAdd;
@@ -223,6 +233,7 @@ public class DataRetriever {
 
     public List<Team> findAllExistingTeamsWithoutPlayers() {
         DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
         List<Team> allTeam = new ArrayList<>();
         String SQL = """
                 SELECT id, name, continent
@@ -230,7 +241,6 @@ public class DataRetriever {
                 """;
 
         try (
-                Connection connection = dbConnection.getDBConnection();
                 PreparedStatement ps = connection.prepareStatement(SQL);
                 ResultSet resultSet = ps.executeQuery()
         ) {
@@ -243,12 +253,15 @@ public class DataRetriever {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error executing query", e);
+        } finally {
+            dbConnection.close(connection);
         }
         return allTeam;
     }
 
     public Player findPlayerById(int idPlayer) {
         DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
         Player foundPlayer = null;
 
         String SQL = """
@@ -257,8 +270,9 @@ public class DataRetriever {
             WHERE id = ?
             """;
 
-        try (Connection connection = dbConnection.getDBConnection();
-             PreparedStatement ps = connection.prepareStatement(SQL)) {
+        try (
+             PreparedStatement ps = connection.prepareStatement(SQL)
+        ) {
 
             ps.setInt(1, idPlayer);
 
@@ -276,13 +290,43 @@ public class DataRetriever {
 
         } catch (SQLException e) {
             throw new RuntimeException("Error fetching player by id", e);
+        } finally {
+            dbConnection.close(connection);
         }
 
         return foundPlayer;
     }
 
+    public List<Player> findAllPlayers() {
+        DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
+        List<Player> players = new ArrayList<>();
+        String SQL = """
+                SELECT id, name, age, "position", id_team
+                FROM "Player"
+                """;
+
+        try (
+             PreparedStatement ps = connection.prepareStatement(SQL);
+             ResultSet rs = ps.executeQuery()
+        ) {
+
+            while (rs.next()) {
+                players.add(mapToPlayer(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error executing query", e);
+        } finally {
+            dbConnection.close(connection);
+        }
+
+        return players;
+    }
+
+
     public Team saveTeam(Team teamToSave) throws SQLException {
         DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
         Team addedTeam = null;
 
         String SQLToInsertTeam = """
@@ -296,9 +340,10 @@ public class DataRetriever {
             VALUES (?, ?, ?::positions_enum, ?)
             """;
 
-        String SQLToDeleteAllPlayersOfTheTeam = """
-            DELETE FROM "Player"
-            WHERE id_team = ?
+        String SQLToUpdateIdTeamOnPlayer = """
+            UPDATE "Player"
+            SET id_team = ?
+            WHERE id = ?
             """;
 
         String SQLToUpdateTeam = """
@@ -307,6 +352,7 @@ public class DataRetriever {
             WHERE id = ?
             """;
 
+        List<Player> allPlayers = findAllPlayers();
         List<Team> existingTeams = findAllExistingTeamsWithoutPlayers();
         Team existingTeam = null;
 
@@ -318,44 +364,53 @@ public class DataRetriever {
                 break;
             }
         }
+        connection.setAutoCommit(false);
 
-        try (Connection connection = dbConnection.getDBConnection()) {
-            connection.setAutoCommit(false);
+        try {
+            if (existingTeam != null) {
+                teamToSave.setId(existingTeam.getId());
 
-            try {
-                if (existingTeam != null) {
-                    teamToSave.setId(existingTeam.getId());
-
-                    try (PreparedStatement psUpdate = connection.prepareStatement(SQLToUpdateTeam)) {
+                try (PreparedStatement psUpdate = connection.prepareStatement(SQLToUpdateTeam)) {
                         psUpdate.setString(1, teamToSave.getName());
                         psUpdate.setString(2, teamToSave.getContinent().name());
                         psUpdate.setInt(3, teamToSave.getId());
                         psUpdate.executeUpdate();
                     }
 
-                    if (teamToSave.getPlayers() != null) {
-                        if (teamToSave.getPlayers().isEmpty()) {
-                            try (PreparedStatement psDelete = connection.prepareStatement(SQLToDeleteAllPlayersOfTheTeam)) {
-                                psDelete.setInt(1, teamToSave.getId());
-                                psDelete.executeUpdate();
-                            }
-                        } else {
-                            for (Player player : teamToSave.getPlayers()) {
-                                if (player.getId() == 0 || findPlayerById(player.getId()) == null) {
-                                    try (PreparedStatement psInsert = connection.prepareStatement(SQLToInsertPlayer)) {
-                                        psInsert.setString(1, player.getName());
-                                        psInsert.setInt(2, player.getAge());
-                                        psInsert.setString(3, player.getPosition().name());
-                                        psInsert.setInt(4, teamToSave.getId());
+                if (teamToSave.getPlayers() != null) {
+                    if (teamToSave.getPlayers().isEmpty()) {
+                        try (PreparedStatement psToUpdateIdTeamOnPlayer = connection.prepareStatement(SQLToUpdateIdTeamOnPlayer)) {
+                            for (Player player : findAllPlayerByIdTeam(teamToSave.getId())){
+                                psToUpdateIdTeamOnPlayer.setNull(1, Types.INTEGER);
+                                psToUpdateIdTeamOnPlayer.setInt(2, player.getId());
 
-                                        psInsert.executeUpdate();
+                                psToUpdateIdTeamOnPlayer.executeUpdate();
+                            }
+                        }
+                    } else {
+                        for (Player player : teamToSave.getPlayers()) {
+                            if (player.getId() == 0 || findPlayerById(player.getId()) == null) {
+                                    boolean playerExists = allPlayers.stream().anyMatch(plr ->
+                                            plr.getName().equals(player.getName())
+                                                    && plr.getAge() == player.getAge()
+                                                    && plr.getPosition() == player.getPosition()
+                                    );
+
+                                    if (!playerExists) {
+                                        try (PreparedStatement psInsert = connection.prepareStatement(SQLToInsertPlayer)) {
+                                            psInsert.setString(1, player.getName());
+                                            psInsert.setInt(2, player.getAge());
+                                            psInsert.setString(3, player.getPosition().name());
+                                            psInsert.setInt(4, teamToSave.getId());
+
+                                            psInsert.executeUpdate();
+                                        }
                                     }
-                                }
                             }
                         }
                     }
-
-                } else {
+                }
+            } else {
                     try (PreparedStatement psInsertTeam = connection.prepareStatement(SQLToInsertTeam)) {
                         psInsertTeam.setString(1, teamToSave.getName());
                         psInsertTeam.setString(2, teamToSave.getContinent().name());
@@ -386,12 +441,14 @@ public class DataRetriever {
             } catch (SQLException e) {
                 connection.rollback();
                 throw e;
-            }
+        } finally {
+            dbConnection.close(connection);
         }
         return addedTeam;
     }
     public List<Team> findTeamsByPlayerName(String playerName){
         DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getDBConnection();
         List<Integer> allTeamId = new ArrayList<>();
         List<Team> foundedTeams = new ArrayList<>();
 
@@ -402,7 +459,6 @@ public class DataRetriever {
                 """;
 
         try (
-                Connection connection = dbConnection.getDBConnection();
                 PreparedStatement psToFindAllIdTeamByPlayerName = connection.prepareStatement(SQLToFindAllIdTeamByPlayerName)
         ){
             psToFindAllIdTeamByPlayerName.setString(1, "%" + playerName + "%");
@@ -423,6 +479,21 @@ public class DataRetriever {
             return foundedTeams;
         } catch (SQLException e){
             throw new RuntimeException("Database error", e);
+        } finally {
+            dbConnection.close(connection);
         }
+    }
+
+    static void main(String[] args) throws SQLException {
+        DataRetriever dataRetriever = new DataRetriever();
+        List<Player> players = new ArrayList<>();
+        Player rakoto = new Player("rakoto", 25, Player.PlayerPositionEnum.valueOf("GK"), null);
+        Player rabe = new Player("rabe", 28, Player.PlayerPositionEnum.valueOf("GK"), null);
+        players.add(rakoto);
+        players.add(rabe);
+
+        Team team = new Team( 1,"FC Tsenakely", Team.ContinentEnum.valueOf("AFRICA"), players);
+        System.out.println(dataRetriever.saveTeam(team));
+
     }
 }
